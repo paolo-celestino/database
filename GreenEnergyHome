@@ -1,0 +1,217 @@
+--CREATE
+
+
+-- Table: public.complesso
+
+CREATE TABLE public.complesso
+(
+	nome_complesso varchar(30) NOT NULL,
+	indirizzo varchar(60) NOT NULL,
+	PRIMARY KEY(nome_complesso, indirizzo)
+)
+
+
+-- Table: public.carico
+
+CREATE TABLE public.carico
+(
+	id_carico Integer NOT NULL PRIMARY KEY,
+	nome_carico varchar(20)
+);
+
+-- Table: public.arduino
+
+CREATE TABLE public.arduino
+(
+    id_client varchar(20) NOT NULL PRIMARY KEY
+)
+
+-- Table: public.topic
+
+CREATE TABLE public.topic
+(
+    topic varchar(60) NOT NULL PRIMARY KEY
+);
+
+
+-- Table: public.abitazione
+
+CREATE TABLE public.abitazione
+(
+    id_abitazione integer NOT NULL PRIMARY KEY,
+    indirizzo varchar(60) NOT NULL
+)
+
+
+-- Table: public.pinze
+
+-- DROP TABLE public.pinze;
+
+CREATE TABLE public.pinze
+(
+    nome_pinza varchar(20) PRIMARY KEY NOT NULL,
+    abitazione integer,
+    valore double,
+    FOREIGN KEY(abitazione) REFERENCES public.abitazione(id_abitazione)
+)
+
+
+--TABLE public.riferisce;
+
+CREATE TABLE public.riferisce
+(
+	arduino varchar(20),
+	abitazione Integer,
+	FOREIGN KEY(abitazione) REFERENCES public.abitazione(id_abitazione),
+	FOREIGN KEY(arduino) REFERENCES public.arduino(id_client)
+)
+
+-- Table: public.gestisce
+
+CREATE TABLE public.gestisce
+(
+	abitazione Integer,
+	carico Integer,
+	FOREIGN KEY(abitazione) REFERENCES public.abitazione(id_abitazione),
+	FOREIGN KEY(carico) REFERENCES public.carico(id_carico)
+)
+
+
+-- Table:  public.contiene;
+
+CREATE TABLE public.contiene
+(
+	arduino varchar(20),
+	topic varchar(60),
+	FOREIGN KEY(topic) REFERENCES public.topic(topic),
+	FOREIGN KEY(arduino) REFERENCES public.arduino(id_client)
+)
+
+-- Table: public.energia
+
+CREATE TABLE public.energia
+(
+    pinza varchar(20),
+    abitazione integer,
+    FOREIGN KEY(pinza) REFERENCES public.pinze(nome_pinza),
+    FOREIGN KEY(abitazione) REFERENCES public.abitazione(id_abitazione)
+)
+
+
+-- Table: public.appartengono
+
+CREATE TABLE public.appartengono
+(
+    carico integer,
+    indirizzo varchar(60),
+	nome_complesso varchar(20),
+    	FOREIGN KEY(carico) REFERENCES public.carico(id_carico),
+	FOREIGN KEY(nome_complesso, indirizzo) REFERENCES public.complesso(nome_complesso, indirizzo)
+)
+
+---------------INSERT----------------------------
+
+
+INSERT INTO public.abitazione(
+	id_abitazione, indirizzo)
+	VALUES (5678, 'Corso Venezia 25 Torino');
+INSERT INTO public.abitazione(
+	id_abitazione, indirizzo)
+	VALUES (1234, 'Via Roma 6 Milano');
+
+
+INSERT INTO public.arduino(
+	id_client)
+	VALUES ('bme3');
+
+
+INSERT INTO public.riferisce(
+	arduino, abitazione)
+	VALUES ('bme3', 1234);
+
+INSERT INTO public.pinze(
+	nome_pinza, abitazione, valore)
+	VALUES ('pannello', 1234, 0.70);
+INSERT INTO public.pinze(
+	nome_pinza, abitazione, valore)
+	VALUES ('enel', 1234, 0.25);
+INSERT INTO public.pinze(
+	nome_pinza, abitazione, valore)
+	VALUES ('caricoAbitazione', 1234, 3.47);
+INSERT INTO public.pinze(
+	nome_pinza, abitazione, valore)
+	VALUES ('caricoComplesso', 1234, 0.05);
+
+
+INSERT INTO public.energia(
+	pinza, abitazione)
+	VALUES ('pannello', 1234);
+INSERT INTO public.energia(
+	pinza, abitazione)
+	VALUES ('enel', 1234);
+INSERT INTO public.energia(
+	pinza, abitazione)
+	VALUES ('caricoAbitazione', 1234);
+INSERT INTO public.energia(
+	pinza, abitazione)
+	VALUES ('caricoComplesso', 1234);
+
+
+INSERT INTO public.topic(
+	topic)
+	VALUES ('desc/test/bme3/gpio');
+
+
+INSERT INTO public.contiene(
+	arduino, topic)
+	VALUES ('bme3','desc/test/bme3/gpio');
+
+
+INSERT INTO public.carico(
+	id_carico, nome_carico)
+	VALUES (3456,'luci');
+INSERT INTO public.carico(
+	id_carico, nome_carico)
+	VALUES (7654,'lavanderia');
+
+
+INSERT INTO public.gestisce(
+	abitazione, carico)
+	VALUES (1234, 3456);
+
+
+INSERT INTO public.complesso(
+	nome_complesso, indirizzo)
+	VALUES ('Complesso Blu', 'Via Roma Milano');
+
+
+INSERT INTO public.appartengono(
+	nome_complesso, indirizzo, carico)
+	VALUES ('Complesso Blu', 'Via Roma Milano',7654 );
+
+-------------------------------QUERY-------------------
+
+
+--Query per ricavare l’energia prodotta dalla casa con un certo id di ogni pinza 
+
+SELECT valore, nome_pinza, abitazione
+	FROM public.pinze
+	WHERE abitazione = 1234;
+
+--Query per prendere la lista di topic 
+
+SELECT topic
+	FROM public.topic;
+
+--Query per associare una casa al carico condominiale che sta alimentando 
+
+SELECT g.abitazione, a.indirizzo, a.nome_complesso, c.id_carico, c.nome_carico
+	FROM public.carico as c join public.appartengono as a ON c.id_carico = a.carico
+	join public.gestisce as g ON a.carico = c.id_carico
+	WHERE g.abitazione = 1234
+
+--Query che ritorna il client dell’arduino associato alla casa 
+
+SELECT  r.abitazione, a.id_client
+	FROM public.arduino as a join public.riferisce as r ON r.arduino = a.id_client
+	WHERE r.abitazione = 1234
